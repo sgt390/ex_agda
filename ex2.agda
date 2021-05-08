@@ -181,37 +181,38 @@ succ-monotonic : {a b : ℕ} → a < b → succ a < succ b
 succ-monotonic base     = base
 succ-monotonic (step p) = step (succ-monotonic p)
 
+aux₁ : {a b : ℕ} → succ a < b → a < b
+aux₁ base = step base
+aux₁ (step x) = step (aux₁ x)
+
+
+inv-succ-monotonic : {a b : ℕ} → succ a < succ b → a < b
+inv-succ-monotonic base     = base
+inv-succ-monotonic (step p) = aux₁ p
 
 lemma-<⇒≤ : {a b : ℕ} → a < b → a ≤ b
 lemma-<⇒≤ base     = step base
 lemma-<⇒≤ (step p) = step (lemma-<⇒≤ p)
 
 -- EXERCISE: Show that _≤_ is transitive.
-succ-monotonic-≤ : {a b : ℕ} → a ≤ b → succ a ≤ succ b
-succ-monotonic-≤ base = base
-succ-monotonic-≤ (step x) = step (succ-monotonic-≤ x)
-
-remove-succ-≤ : {a b : ℕ} → succ a ≤ b → a ≤ b
-remove-succ-≤ base = step base
-remove-succ-≤ (step x) = step (remove-succ-≤ x)
-
-
 IsTransitive : {X : Set} (_≤_ : X → X → Set) → Set
 IsTransitive _≤_ = {a b c : _} → a ≤ b → b ≤ c → a ≤ c
 
---lemma-≤-transitive : IsTransitive _≤_
---lemma-≤-transitive p base     = step p
---lemma-≤-transitive p (step q) = step (lemma-≤-transitive p q)
-
+lemma-≤-transitive : IsTransitive _<_
+lemma-≤-transitive p base     = step p
+lemma-≤-transitive p (step q) = step (lemma-≤-transitive p q)
 
 -- EXERCISE: Show that _≤_ is antisymmetric.
 IsAntiSymm : {X : Set} (_≤_ : X → X → Set) → Set
 IsAntiSymm _≤_ = {a b : _} → a ≤ b → b ≤ a → a ≡ b
 
 lemma-≤-antisymm : IsAntiSymm _≤_
-lemma-≤-antisymm base y = refl
-lemma-≤-antisymm (step x) base = refl
-lemma-≤-antisymm (step x) (step y) = cong succ (lemma-≤-antisymm (remove-succ-≤ x) (remove-succ-≤ y))
+lemma-≤-antisymm base b = refl
+lemma-≤-antisymm (step a) base = refl
+lemma-≤-antisymm (step a) (step b) = cong succ (lemma-≤-antisymm (aux≤ a) (aux≤ b)) where
+  aux≤ : {a b : ℕ} → succ a ≤ b → a ≤ b
+  aux≤ base = step base
+  aux≤ (step x) = step (aux≤ x) 
 
 IsReflexive : {X : Set} (_≤_ : X → X → Set) → Set
 IsReflexive _≤_ = {x : _} → x ≤ x
@@ -270,9 +271,13 @@ data Any {X : Set} (P : X → Set) : List X → Set where
 --     alltoany : {X : Set} {P : X → Set} {xs : List X} → All P xs → Any P xs
 --     alltoany p = {!!}
 -- Show that indeed, such a function alltoany does not exist:
-lemma-no-naive-alltoany : ({X : Set} {P : X → Set} {xs : List X} → All P xs → Any P xs) → ⊥
-lemma-no-naive-alltoany f =  {! !}
 
+aux-any : {X : Set} {P : X → Set} → Any P [] → ⊥
+aux-any = λ ()
+
+lemma-no-naive-alltoany : ({X : Set} {P : X → Set} {xs : List X} → All P xs → Any P xs) → ⊥
+lemma-no-naive-alltoany f with (f nil)
+... |    any[] = aux-any any[]
 
 -- "NonEmpty xs" is the type of witnesses that the list xs is not empty.
 data NonEmpty {X : Set} : List X → Set where
@@ -285,13 +290,6 @@ alltoany' : {X : Set} {P : X → Set} {xs : List X} → zero < length xs → All
 alltoany' _ (cons p q) = here p
 
 -- EXERCISE: Define a predicate expressing that all elements of a given list are equal.
-
-data AllEqual {X : Set} : List X → Set where
-  nil   : AllEqual []
-  cons₁ : {x : X} → AllEqual (x ∷ [])
-  cons  : {x y : X} {xs : List X} → x ≡ y → AllEqual xs → AllEqual (x ∷ y ∷ xs)
-
-
 
 -- EXERCISE: Define a predicate expressing that a given list is a palindrome (like x ∷ y ∷ z ∷ y ∷ x ∷ []).
 -- There are several ways how this can be done. One approach I can think of uses
@@ -311,25 +309,43 @@ data Dec (A : Set) : Set where    -- "Dec" is short for "Decidable"
 0<succ zero = base
 0<succ (succ a) = step (0<succ a)
 
-
-
 -- EXERCISE: Show that "_<_" is decidable.
 is-<? : (a b : ℕ) → Dec (a < b)
 is-<? zero     zero     = no (λ ())
 is-<? zero     (succ b) = yes (0<succ b)
-is-<? (succ a) zero     = no (λ ())
-is-<? (succ a) (succ b) = {!!}
+is-<? (succ a) zero = no (λ ())
+is-<? (succ a) (succ b) with (is-<? a b)
+... |    yes x = yes (succ-monotonic x)
+... |    no  f = no λ x → f (inv-succ-monotonic x)
 
 -- EXERCISE: Show that "All P" is decidable, if P is.
 is-all? : {X : Set} {P : X → Set} → ((x : X) → Dec (P x)) → (xs : List X) → Dec (All P xs)
-is-all? oracle [] = yes nil
-is-all? oracle (x ∷ xs) with oracle x --with is-all? oracle xs
-... | yes p  with is-all? oracle xs {!   !}  -- todo check why doesnt work
-... | no p  = no λ { (cons q r) → p q }   -- ctrl c ctrl r REFINE THE GOAL
+is-all? oracle []       = yes nil
+is-all? oracle (x ∷ xs) with oracle x | is-all? oracle xs
+... | yes p | yes q = yes (cons p q)
+... | yes p | no  q = no λ { (cons r s) → q s }
+... | no  p | q     = no λ { (cons q r) → p q }
+
+{- in Haskell:
+  all P [] = True
+  all P (x :: xs)
+    | P x       = all P xs
+    | otherwise = False
+-}
 
 -- EXERCISE: Show that "Any P" is decidable, if P is.
+-- todo : is there a better way?
 is-any? : {X : Set} {P : X → Set} → ((x : X) → Dec (P x)) → (xs : List X) → Dec (Any P xs)
-is-any? = {!!}
+is-any? oracle [] = no (λ ())
+is-any? oracle (x ∷ xs) with oracle x
+...                     | yes a = yes (here a)
+...                     | no a with is-any? oracle xs
+...                            | yes a₁ = yes (there a₁)
+...                            | no a₁ = no (λ x₁ → aux₂ a a₁ x₁) where -- aux₂ a a₁    where
+    aux₂ : {X : Set} {P : X → Set} {x : X} {xs : List X} → (P x → ⊥) → (Any P xs → ⊥) → Any P (x ∷ xs) → ⊥
+    aux₂ d₁ d₂ (here x) = d₁ x
+    aux₂ d₁ d₂ (there p) = d₂ p
+
 
 
 -- ON NOT OBVIOUSLY TERMINATING FUNCTIONS
@@ -455,14 +471,18 @@ digits''' n = go n (wf-nat n)
 
 -- EXERCISE: Prove the following lemma, which looks deceptively simple but is not.
 lemma-digits''' : (n : ℕ) → digits''' (succ n) ≡ succ (digits''' (halve (succ n)))
-lemma-digits''' n = {!!}
-
+lemma-digits''' zero = refl
+lemma-digits''' (succ n) = begin
+      digits''' (succ (succ n))                ≡⟨ {! ? !} ⟩
+      succ (digits''' (succ (halve n)))        ≡⟨⟩
+      succ (digits''' (halve (succ (succ n)))) ∎
 
 
 -- EXERCISE: Show that well-founded relations are irreflexive. More
 -- precisely, verify the following local version of this statement:
 lemma-wf-irreflexive : {X : Set} {_<_ : X → X → Set} {x : X} → Acc _<_ x → x < x → ⊥
-lemma-wf-irreflexive = {!!}
+lemma-wf-irreflexive (acc f) x<x = {! !}
+
 
 -- EXERCISE: Show that there are no infinite descending sequences.
 lemma-no-descending-sequences : {X : Set} {_<_ : X → X → Set} → (α : ℕ → X) → ((n : ℕ) → α (succ n) < α n) → Acc _<_ (α zero) → ⊥
@@ -471,3 +491,27 @@ lemma-no-descending-sequences α desc p = {!!}
 
 -- EXERCISE (if you feel adventurous): Implement quicksort.
 
+
+
+
+
+
+
+_ : zero ≡ one → ⊥
+_ = λ ()
+
+
+
+
+
+
+{--
+-- EXERCISE: Show that "All P" is decidable, if P is.
+is-all? : {X : Set} {P : X → Set} → ((x : X) → Dec (P x)) → (xs : List X) → Dec (All P xs)
+is-all? oracle []       = yes nil
+is-all? oracle (x ∷ xs) with oracle x
+... | yes p with is-all? oracle xs
+...            |   yes q = yes (cons p q)
+...            |   no q  = no λ { (cons r s) → q s }
+... | no  p              = no λ { (cons q r) → p q }
+--}
