@@ -323,10 +323,7 @@ is-<? (succ a) (succ b) = {!!}
 -- EXERCISE: Show that "All P" is decidable, if P is.
 is-all? : {X : Set} {P : X → Set} → ((x : X) → Dec (P x)) → (xs : List X) → Dec (All P xs)
 is-all? oracle [] = yes nil
-is-all? oracle (x ∷ xs) with oracle x --with is-all? oracle xs
-... | yes p  with is-all? oracle xs {!   !}  -- todo check why doesnt work
-... | no p  = no λ { (cons q r) → p q }   -- ctrl c ctrl r REFINE THE GOAL
-
+is-all? oracle (x ∷ xs) = {!   !}
 -- EXERCISE: Show that "Any P" is decidable, if P is.
 is-any? : {X : Set} {P : X → Set} → ((x : X) → Dec (P x)) → (xs : List X) → Dec (Any P xs)
 is-any? = {!!}
