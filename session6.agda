@@ -133,8 +133,9 @@ module CorrectByConstruction₂
     cons : {ys xys : List A} → (x : A) → OPList x ys → l ≤ x → (x ◂ ys ↝ xys) → OPList l xys
 
   -- EXERCISE: Fill this in.
-  insert : {!!}
-  insert = {!!}
+  insert : {l : A} {xs : List A} → (x : A) → l ≤ x → OPList l xs → OPList l xs
+  insert l l≤x nil = cons l nil l≤x {!   !}
+  insert l l≤x (cons x ls x₁ x₂) = {!   !}
 
   -- EXERCISE: Fill this in.
   sort : (xs : List A) → OPList min xs

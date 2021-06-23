@@ -272,11 +272,12 @@ data Any {X : Set} (P : X → Set) : List X → Set where
 --     alltoany p = {!!}
 -- Show that indeed, such a function alltoany does not exist:
 
+
 aux-any : {X : Set} {P : X → Set} → Any P [] → ⊥
 aux-any = λ ()
 
 lemma-no-naive-alltoany : ({X : Set} {P : X → Set} {xs : List X} → All P xs → Any P xs) → ⊥
-lemma-no-naive-alltoany f with (f nil)
+lemma-no-naive-alltoany f with f {⊥} {λ ()} nil -- (f nil)
 ... |    any[] = aux-any any[]
 
 -- "NonEmpty xs" is the type of witnesses that the list xs is not empty.
@@ -474,7 +475,7 @@ digits''' n = go n (wf-nat n)
 lemma-digits''' : (n : ℕ) → digits''' (succ n) ≡ succ (digits''' (halve (succ n)))
 lemma-digits''' zero = refl
 lemma-digits''' (succ n) = begin
-      digits''' (succ (succ n))                ≡⟨ {! ? !} ⟩
+      digits''' (succ (succ n))                ≡⟨ {!  !} ⟩
       succ (digits''' (succ (halve n)))        ≡⟨⟩
       succ (digits''' (halve (succ (succ n)))) ∎
 
