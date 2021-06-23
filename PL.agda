@@ -11,28 +11,27 @@ data List (A : Set) : Set where
     []      : List A
     _∷_     : A → List A → List A
 
-data Tuple (A : Set) : Set where
-    empty   : Tuple A
-    _,_     : A → A → Tuple A
- 
 
-data Expr : (A : Set) → Set where
-    Eℕ      : ℕ → (Expr ℕ)
-    E𝔹      : 𝔹 → (Expr 𝔹)
-    Eλ      : (List ℕ) → Expr ℕ → Expr ℕ
-    EIf     : Expr 𝔹 → Expr ℕ → Expr ℕ → Expr ℕ
-    EWhile  : Expr 𝔹 → Expr ℕ
-    EVar    : List (Tuple ℕ) → Expr ℕ
-    E+      : Expr ℕ → Expr ℕ → Expr ℕ
-    E≤      : Expr ℕ → Expr ℕ → Expr 𝔹
+data Expr : Set where
+    Eℕ                  : ℕ → Expr
+    E𝔹                  : 𝔹 → Expr
+    EIf_then_else_      : Expr → Expr → Expr → Expr
+    EWhile              : Expr → Expr → Expr
+    E𝕃                  : ℕ → Expr
+    skip                : Expr
+    _≡_                 : Expr → Expr → Expr
+    !_                  : Expr → Expr
+    E+                  : Expr → Expr → Expr
+    E≤                  : Expr → Expr → Expr
+    _,_                 : Expr → Expr → Expr
     
 
 
-_ : Expr ℕ
-_ = ENum zero
+_ : Expr
+_ = Eℕ zero
 
 
-_ : Expr ℕ
-_ = EIf (EBool true) (EVar ((zero , succ zero) ∷ [])) (ENum (succ zero))
+_ : Expr
+_ = EIf (E𝔹 true) then (E𝕃 (succ zero)) else (Eℕ (succ zero))
 
 
